@@ -289,7 +289,6 @@ function card(d,type){
   const urlEl=d.menu_url?`<div class="curl" title="${esc(d.menu_url)}">${esc(shortenUrl(d.menu_url))}</div>`:'';
   const uBar=hasU?`<div class="bline"><span class="blbl">Brugere</span><div class="btrack"><div class="bfill bu" style="width:${uPct}%"></div></div></div>`:'';
   const mBar=hasM?`<div class="bline"><span class="blbl">MRR</span><div class="btrack"><div class="bfill bm" style="width:${mPct}%"></div></div></div>`:'';
-  const badgeLbl=type==='native'?'Native':type==='iframe'?'iFrame':'Extern';
   const dj=esc(JSON.stringify(d).replace(/"/g,'&quot;'));
   return `<div class="card ${type}" onmouseenter="showTT(event,this)" onmouseleave="hideTT()" onmousemove="moveTT(event)" data-d="${dj}">
     <div class="chdr">
@@ -298,7 +297,7 @@ function card(d,type){
         <div class="cname">${esc(d.name)}</div>
         ${urlEl}
       </div>
-      <span class="cbadge ${type}">${badgeLbl}</span>
+      <span class="cbadge ${type}">${d.count} kunder</span>
     </div>
     ${desc}
     <div class="cpills">${uPill}${mPill}${cov?`<span class="mcov">${cov}</span>`:''}</div>
