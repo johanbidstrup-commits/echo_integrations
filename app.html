@@ -310,6 +310,29 @@ function card(d,type){
   </div>`;
 }
 
+function noIntCard(d){
+  const name=d.company||d.app_navn||'Ukendt';
+  const size=d.size?d.size.match(/^([A-D])/)?.[1]||'':'';
+  const sizeColors={A:'#7c3aed',B:'#2563eb',C:'#059669',D:'#64748b'};
+  const sizeBg=sizeColors[size]||'#94a3b8';
+  const licens=d.licens?`<span class="mpill users noint">${Number(d.licens).toLocaleString('da')} brugere</span>`:`<span class="mpill dim">– brugere</span>`;
+  const mrr=d.mrr?`<span class="mpill mrr">${fmtMrr(d.mrr)} MRR</span>`:`<span class="mpill dim">– MRR</span>`;
+  const ind=d.industry?`<span style="font-size:9px;color:var(--muted);margin-left:auto">${esc(d.industry)}</span>`:'';
+  const appNavn=d.app_navn&&d.app_navn!==name?`<div style="font-size:9px;color:var(--muted);margin-top:1px;font-family:monospace">${esc(d.app_navn)}</div>`:'';
+  const letter=name[0].toUpperCase();
+  const bg=strToColor(name,'');
+  return `<div class="card noint" style="border-left:3px solid #fca5a5">
+    <div class="chdr">
+      <div class="clogo-wrap" style="background:${bg}"><span class="clogo-letter">${letter}</span></div>
+      <div class="chdr-text">
+        <div class="cname">${esc(name)}</div>
+        ${appNavn}
+      </div>
+      ${size?`<span style="background:${sizeBg};color:white;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:700;flex-shrink:0">${size}</span>`:''}
+    </div>
+    <div class="cpills" style="margin-top:6px">${licens}${mrr}${ind}</div>
+  </div>`;
+}
 function renderSec(gid,sid,bid,arr,type){
   const items=filterArr(sortArr(arr));
   const show=TAB==='all'||TAB===type;
