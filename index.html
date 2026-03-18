@@ -17,6 +17,7 @@ input[type=password]{width:100%;border:1.5px solid #e2e8f0;border-radius:8px;pad
 input[type=password]:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
 button{width:100%;background:linear-gradient(135deg,#1e3a5f,#2563eb);color:white;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
 button:hover{opacity:.9;transform:translateY(-1px)}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .err{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:7px;padding:8px 12px;font-size:12px;margin-bottom:12px;display:none}
 .hint{text-align:center;font-size:11px;color:#94a3b8;margin-top:16px}
 </style>
@@ -31,30 +32,69 @@ button:hover{opacity:.9;transform:translateY(-1px)}
   <div class="err" id="err">Forkert adgangskode. Prøv igen.</div>
   <label for="pw">Adgangskode</label>
   <input type="password" id="pw" placeholder="Indtast adgangskode…" autofocus>
-  <button onclick="tryLogin()">Log ind →</button>
+  <button id="btn" onclick="tryLogin()">Log ind →</button>
   <p class="hint">Kontakt Ekko-teamet for adgang</p>
 </div>
 <script>
-const HASH= + PWD_HASH + ;
-async function sha256(s){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+const HASH = '7dc17c422ca21001ca939762e1a3d86256db616c0df31b881287743e6effa7eb';
+
+// SHA-256: tries Web Crypto first (HTTPS), falls back to pure-JS (file://)
+async function sha256(str) {
+  if (window.crypto && window.crypto.subtle) {
+    const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+  // Pure-JS fallback for file:// context
+  return sha256js(str);
 }
-async function tryLogin(){
-  const pw=document.getElementById('pw').value;
-  const h=await sha256(pw);
-  if(h===HASH){
-    sessionStorage.setItem('ekko_auth','1');
-    window.location.href='app.html';
+
+function sha256js(str) {
+  function rr(v,a){return(v>>>a)|(v<<(32-a))}
+  var mp=Math.pow,mw=mp(2,32),i,j,res='',words=[],abl=str.length*8;
+  var hash=[],k=[],pc=0,ic={};
+  for(var c=2;pc<64;c++){
+    if(!ic[c]){for(i=0;i<313;i+=c)ic[i]=c;hash[pc]=(mp(c,.5)*mw)|0;k[pc++]=(mp(c,1/3)*mw)|0;}
+  }
+  str+='\x80';
+  while(str.length%64-56)str+='\x00';
+  for(i=0;i<str.length;i++){j=str.charCodeAt(i);if(j>>8)return'';words[i>>2]|=j<<((3-i)%4)*8;}
+  words[words.length]=((abl/mw)|0);words[words.length]=abl;
+  for(j=0;j<words.length;){
+    var w=words.slice(j,j+=16),oh=hash.slice();hash=hash.slice(0,8);
+    for(i=0;i<64;i++){
+      var w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];
+      var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^(~e&hash[6]))+k[i]+
+        (w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
+      var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+      hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0;
+    }
+    hash=hash.slice(0,8);for(i=0;i<8;i++)hash[i]=(hash[i]+oh[i])|0;
+  }
+  for(i=0;i<8;i++)for(j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;res+=((b<16)?'0':'')+b.toString(16);}
+  return res;
+}
+
+async function tryLogin() {
+  var pw = document.getElementById('pw').value;
+  if (!pw) return;
+  document.getElementById('btn').disabled = true;
+  var h = await sha256(pw);
+  if (h === HASH) {
+    sessionStorage.setItem('ekko_auth', '1');
+    window.location.href = 'app.html';
   } else {
-    document.getElementById('err').style.display='block';
-    document.getElementById('pw').value='';
+    document.getElementById('err').style.display = 'block';
+    document.getElementById('pw').value = '';
     document.getElementById('pw').focus();
+    document.getElementById('btn').disabled = false;
   }
 }
-document.getElementById('pw').addEventListener('keydown',e=>{ if(e.key==='Enter') tryLogin(); });
-// Already logged in?
-if(sessionStorage.getItem('ekko_auth')==='1') window.location.href='app.html';
+
+document.getElementById('pw').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') tryLogin();
+});
+
+if (sessionStorage.getItem('ekko_auth') === '1') window.location.href = 'app.html';
 </script>
 </body>
 </html>
